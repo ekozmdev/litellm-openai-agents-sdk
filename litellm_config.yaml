@@ -1,37 +1,10 @@
 model_list:
-  - model_name: bedrock-claude-3-5-sonnet
+  - model_name: bedrock-claude-haiku-4-5-jp
     litellm_params:
-      model: bedrock/anthropic.claude-3-5-sonnet-20240620-v1:0
+      model: bedrock/jp.anthropic.claude-haiku-4-5-20251001-v1:0
       aws_access_key_id: os.environ/AWS_ACCESS_KEY_ID
       aws_secret_access_key: os.environ/AWS_SECRET_ACCESS_KEY
       aws_region_name: os.environ/AWS_REGION_NAME
-
-  - model_name: azure-foundry-claude
-    litellm_params:
-      model: azure_ai/claude-sonnet-4-5
-      api_base: os.environ/AZURE_FOUNDRY_API_BASE
-      api_key: os.environ/AZURE_FOUNDRY_API_KEY
-
-  - model_name: vertex-gemini-2.0-flash
-    litellm_params:
-      model: vertex_ai/gemini-2.0-flash-001
-      vertex_project: os.environ/VERTEX_PROJECT_ID
-      vertex_location: os.environ/VERTEX_LOCATION
-
-  - model_name: openai-default
-    litellm_params:
-      model: openai/gpt-4o-mini
-      api_key: os.environ/OPENAI_API_KEY
-
-  - model_name: anthropic-default
-    litellm_params:
-      model: anthropic/claude-3-5-sonnet-latest
-      api_key: os.environ/ANTHROPIC_API_KEY
-
-  - model_name: gemini-default
-    litellm_params:
-      model: gemini/gemini-2.0-flash
-      api_key: os.environ/GEMINI_API_KEY
 
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY

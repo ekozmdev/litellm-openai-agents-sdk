@@ -82,7 +82,7 @@ def _make_session_id(session_id: str | None) -> str:
 
 
 def build_config(args: argparse.Namespace) -> RuntimeConfig:
-    load_dotenv(".env.app")
+    load_dotenv(".env")
 
     model = args.model or os.getenv("LITELLM_MODEL")
     if not model:

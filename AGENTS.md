@@ -5,7 +5,7 @@
 ## プロジェクトの目的
 
 - LiteLLM Proxy（Docker）を OpenAI 互換エンドポイントとして公開する。
-- OpenAI Agents SDK（Responses API）から Proxy 経由で複数プロバイダー（Bedrock / Azure Foundry / Vertex AI）と会話できる `chat.py` を提供する。
+- OpenAI Agents SDK（Responses API）から Proxy 経由で Bedrock モデルと会話できる `chat.py` を提供する。
 - セッションを SQLite で永続化し、同一 `session_id` で会話継続できるようにする。
 
 ## 基本
@@ -24,6 +24,5 @@
 ## 設定ファイル運用
 
 - Compose ファイル名は常に `compose.yaml` を使う。
-- アプリ設定は `.env.app`、LiteLLM Proxy 設定は `.env.litellm` を使う。
-- サンプルは `.env.app.example` / `.env.litellm.example` を更新する。
-
+- 設定は `.env` 1ファイルに集約する。
+- サンプルは `.env.example` を更新する。

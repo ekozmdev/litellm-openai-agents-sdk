@@ -1,22 +1,19 @@
 ## LiteLLM Proxy + OpenAI Agents SDK チャット
 
-LiteLLM Proxy を Docker で起動し、OpenAI Agents SDK（Responses API 前提）から Bedrock / Azure AI Foundry / Vertex AI モデルへ会話します。
+LiteLLM Proxy を Docker で起動し、OpenAI Agents SDK（Responses API 前提）から Bedrock モデルへ会話します。
 
 ### 前提
 
 - Docker / Docker Compose
 - `uv`（`.python-version` は 3.14）
 - Bedrock 呼び出し権限（`bedrock:InvokeModel*` など）がある AWS 認証情報
-- Azure AI Foundry の endpoint URL と API Key（Foundry を使う場合）
-- Vertex AI 呼び出し権限がある GCP サービスアカウント JSON（Vertex を使う場合）
 
 ### 1. 機密情報ファイルを作成
 
-用途ごとに 2 つの env ファイルを作成します。
+1つの `.env` を使います（Docker Compose と `chat.py` で共通）。
 
 ```bash
-cp .env.app.example .env.app
-cp .env.litellm.example .env.litellm
+cp .env.example .env
 ```
 
 LiteLLM のマスターキーは `uv run` で生成できます。
@@ -25,34 +22,23 @@ LiteLLM のマスターキーは `uv run` で生成できます。
 uv run python -c "import secrets; print('sk-litellm-' + secrets.token_urlsafe(48))"
 ```
 
-生成した同じ値を次の2つに設定してください。
+生成した値を `.env` の以下2つに同じ値で設定してください。
 
-- `.env.litellm` の `LITELLM_MASTER_KEY`
-- `.env.app` の `LITELLM_API_KEY`
+- `LITELLM_MASTER_KEY`（LiteLLM Proxy 側）
+- `LITELLM_API_KEY`（`chat.py` 側）
 
-`chat.py` 用の `.env.app` では最低限以下を設定してください。
+`.env.example` には用途別コメントを入れています。
 
-- `LITELLM_API_KEY`（Proxy にアクセスするためのキー）
-- 必要なら `LITELLM_MODEL`（デフォルトは `bedrock-claude-3-5-sonnet`）
+- `Docker Compose / LiteLLM Proxy が読む設定`
+- `chat.py が読む設定`
 
-LiteLLM Proxy 用の `.env.litellm` では最低限以下を設定してください。
+最低限必要な項目:
 
+- `LITELLM_MASTER_KEY`
+- `LITELLM_API_KEY`
 - `AWS_ACCESS_KEY_ID`
 - `AWS_SECRET_ACCESS_KEY`
-- `AWS_REGION_NAME`（例: `us-east-1`）
-- `AZURE_FOUNDRY_API_BASE`（Foundry endpoint URL）
-- `AZURE_FOUNDRY_API_KEY`（Foundry API Key）
-- `VERTEX_PROJECT_ID`（Vertex 利用時）
-- `VERTEX_LOCATION`（例: `us-central1`, Vertex 利用時）
-
-Vertex を使う場合、サービスアカウント JSON を以下に配置してください。
-
-```bash
-cp /path/to/your-service-account.json ./secrets/vertex-service-account.json
-```
-
-`compose.yaml` で `./secrets` をコンテナの `/run/secrets` にマウントし、
-`GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/vertex-service-account.json` を利用します。
+- `AWS_REGION_NAME`（例: `ap-northeast-1`）
 
 ### 2. LiteLLM Proxy を起動
 
@@ -62,11 +48,9 @@ docker compose up -d
 
 このリポジトリの `litellm_config.yaml` には以下のエイリアスを定義済みです。
 
-- `bedrock-claude-3-5-sonnet`
-- `azure-foundry-claude`
-- `vertex-gemini-2.0-flash`
+- `bedrock-claude-haiku-4-5-jp`（`jp.anthropic.claude-haiku-4-5-20251001-v1:0`）
 
-必要に応じてモデルIDを変更してください。
+他プロバイダー（Vertex など）は、検証できた段階で `litellm_config.yaml` と `.env` に追記してください。
 
 ### 3. エージェントとチャット
 
@@ -74,18 +58,6 @@ docker compose up -d
 
 ```bash
 uv run chat.py --input "こんにちは"
-```
-
-Vertex モデルを使う例:
-
-```bash
-uv run chat.py --input "こんにちは" --model "vertex-gemini-2.0-flash"
-```
-
-Azure Foundry モデルを使う例:
-
-```bash
-uv run chat.py --input "こんにちは" --model "azure-foundry-claude"
 ```
 
 セッション継続:
@@ -96,12 +68,23 @@ uv run chat.py --input "こんにちは" --session-id "XXXXXXX"
 
 `--session-id` 未指定時は UUIDv7 で採番され、`SESSION_ID=...` が表示されます。
 
-### 環境変数（chat.py 側 / `.env.app`）
+### 環境変数（chat.py 側 / `.env`）
 
 - `LITELLM_BASE_URL`（デフォルト: `http://localhost:4000/v1`）
 - `LITELLM_API_KEY`（LiteLLM Proxy の認証キー）
-- `LITELLM_MODEL`（デフォルト: `bedrock-claude-3-5-sonnet`）
+- `LITELLM_MODEL`（デフォルト: `bedrock-claude-haiku-4-5-jp`）
 - `SESSION_DB_PATH`（デフォルト: `sessions.sqlite3`）
+
+### 環境変数（Docker Compose / LiteLLM 側 / `.env`）
+
+- `LITELLM_MASTER_KEY`
+- `POSTGRES_DB`（デフォルト: `posgtres_db`）
+- `POSTGRES_USER`（デフォルト: `postgres_user`）
+- `POSTGRES_PASSWORD`（デフォルト: `posgtes_pass`）
+- `DATABASE_URL`（上記 Postgres 値と整合させる）
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `AWS_REGION_NAME`（`jp.*` 推論プロファイル使用時は `ap-northeast-1` または `ap-northeast-3`）
 
 ### 補足
 
