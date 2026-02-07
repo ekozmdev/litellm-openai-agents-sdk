@@ -19,6 +19,17 @@ cp .env.app.example .env.app
 cp .env.litellm.example .env.litellm
 ```
 
+LiteLLM のマスターキーは `uv run` で生成できます。
+
+```bash
+uv run python -c "import secrets; print('sk-litellm-' + secrets.token_urlsafe(48))"
+```
+
+生成した同じ値を次の2つに設定してください。
+
+- `.env.litellm` の `LITELLM_MASTER_KEY`
+- `.env.app` の `LITELLM_API_KEY`
+
 `chat.py` 用の `.env.app` では最低限以下を設定してください。
 
 - `LITELLM_API_KEY`（Proxy にアクセスするためのキー）
