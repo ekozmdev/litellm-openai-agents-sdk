@@ -19,7 +19,7 @@
 - Lint: `uv run ruff check .`
 - Format確認: `uv run ruff format . --check`
 - Proxy起動: `docker compose up -d`
-- チャット実行: `uv run chat.py --input "こんにちは"`
+- チャット実行: `uv run chat.py --input "こんにちは" --model "bedrock-claude-haiku-4-5-jp"`
 
 ## 設定ファイル運用
 

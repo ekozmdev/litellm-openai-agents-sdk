@@ -6,11 +6,14 @@ import os
 import sys
 import uuid
 from dataclasses import dataclass
+from datetime import datetime
 
 from agents import (
     Agent,
+    ModelSettings,
     Runner,
     SQLiteSession,
+    function_tool,
     set_default_openai_api,
     set_default_openai_client,
     set_tracing_disabled,
@@ -18,14 +21,12 @@ from agents import (
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
-DEFAULT_BASE_URL = "http://localhost:4000/v1"
-DEFAULT_DB_PATH = "sessions.sqlite3"
-
 
 @dataclass(frozen=True)
 class RuntimeConfig:
     input_text: str
     session_id: str
+    is_new_session: bool
     model: str
     base_url: str
     api_key: str
@@ -47,12 +48,13 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--model",
-        help="Model alias on LiteLLM Proxy. Defaults to LITELLM_MODEL.",
+        required=True,
+        help="Model alias on LiteLLM Proxy.",
     )
     parser.add_argument(
         "--db-path",
         default=None,
-        help=f"SQLite path for sessions. Defaults to {DEFAULT_DB_PATH}.",
+        help="SQLite path for sessions. If omitted, SESSION_DB_PATH is used.",
     )
     return parser.parse_args()
 
@@ -84,23 +86,36 @@ def _make_session_id(session_id: str | None) -> str:
 def build_config(args: argparse.Namespace) -> RuntimeConfig:
     load_dotenv(".env")
 
-    model = args.model or os.getenv("LITELLM_MODEL")
-    if not model:
-        raise RuntimeError("Set LITELLM_MODEL or pass --model.")
-
-    base_url = _normalize_base_url(os.getenv("LITELLM_BASE_URL", DEFAULT_BASE_URL))
+    base_url = _normalize_base_url(_require_env("LITELLM_BASE_URL"))
     api_key = _require_env("LITELLM_API_KEY")
-    db_path = args.db_path or os.getenv("SESSION_DB_PATH", DEFAULT_DB_PATH)
+    db_path = args.db_path or _require_env("SESSION_DB_PATH")
+    is_new_session = args.session_id is None
     session_id = _make_session_id(args.session_id)
 
     return RuntimeConfig(
         input_text=args.input,
         session_id=session_id,
-        model=model,
+        is_new_session=is_new_session,
+        model=args.model,
         base_url=base_url,
         api_key=api_key,
         db_path=db_path,
     )
+
+
+@function_tool
+def get_current_time() -> str:
+    """Return the current local date and time with timezone."""
+    now = datetime.now().astimezone()
+    tz_name = now.tzname() or "local"
+    return f"{now.isoformat()} ({tz_name})"
+
+
+@function_tool
+def add_numbers(a: float, b: float) -> str:
+    """Return the sum of two numbers."""
+    return str(a + b)
+
 
 
 async def run_chat(config: RuntimeConfig) -> str:
@@ -117,7 +132,16 @@ async def run_chat(config: RuntimeConfig) -> str:
     agent = Agent(
         name="proxy-assistant",
         model=config.model,
-        instructions="You are a concise and helpful assistant.",
+        model_settings=ModelSettings(
+            store=False,
+            response_include=["reasoning.encrypted_content"],
+        ),
+        instructions=(
+            "You are a concise and helpful assistant. "
+            "When the user asks for the current date/time, call get_current_time tool. "
+            "When the user asks for arithmetic addition, call add_numbers tool."
+        ),
+        tools=[get_current_time, add_numbers],
     )
 
     try:
@@ -145,6 +169,8 @@ def main() -> None:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
 
+    if config.is_new_session:
+        print("SESSION_ID_STATUS=New")
     print(f"SESSION_ID={config.session_id}")
     print(output)
 
