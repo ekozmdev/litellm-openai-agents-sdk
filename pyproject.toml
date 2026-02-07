@@ -1,0 +1,18 @@
+[project]
+name = "litellm-openai-agents-sdk"
+version = "0.1.0"
+description = "Chat with OpenAI Agents SDK via LiteLLM Proxy"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "openai-agents>=0.8.1",
+    "python-dotenv>=1.2.1",
+]
+
+[tool.uv]
+add-bounds = "major"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.0,<0.16.0",
+]

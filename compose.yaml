@@ -1,0 +1,26 @@
+services:
+  litellm:
+    image: docker.litellm.ai/berriai/litellm:main-stable
+    container_name: litellm-proxy
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    env_file:
+      - .env.litellm
+    environment:
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION_NAME: ${AWS_REGION_NAME}
+      AZURE_FOUNDRY_API_BASE: ${AZURE_FOUNDRY_API_BASE}
+      AZURE_FOUNDRY_API_KEY: ${AZURE_FOUNDRY_API_KEY}
+      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/vertex-service-account.json
+      VERTEX_PROJECT_ID: ${VERTEX_PROJECT_ID}
+      VERTEX_LOCATION: ${VERTEX_LOCATION}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./litellm_config.yaml:/app/config.yaml:ro
+      - ./secrets:/run/secrets:ro
+    restart: unless-stopped
